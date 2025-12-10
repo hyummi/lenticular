@@ -48,28 +48,6 @@
       margin: 0 auto;
     }
 
-    .uploader {
-      border: 1px dashed rgba(148, 163, 184, 0.4);
-      border-radius: 12px;
-      padding: 14px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-      background: rgba(30, 41, 59, 0.35);
-      cursor: pointer;
-      transition: border-color 160ms ease, background 160ms ease;
-    }
-
-    .uploader:hover {
-      border-color: rgba(94, 234, 212, 0.7);
-      background: rgba(30, 41, 59, 0.5);
-    }
-
-    #fileInput {
-      display: none;
-    }
-
     .badge {
       background: rgba(94, 234, 212, 0.12);
       color: #67e8f9;
@@ -216,21 +194,60 @@
       color: #94a3b8;
       font-weight: 500;
     }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(30, 41, 59, 0.35);
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(94, 234, 212, 0.7);
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(94, 234, 212, 0.6);
+      background: rgba(94, 234, 212, 0.12);
+      color: #67e8f9;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 140ms ease, transform 120ms ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Lenticular / Moiré Preview</h1>
-    <p>Drop in any image and play with stripe spacing, angle, and motion.</p>
+    <p>Paste a single image URL to view and apply the lenticular overlay.</p>
 
-    <label class="uploader" for="fileInput" id="dropzone">
-      <div>
-        <div style="font-weight:600;">Upload or drag a photo</div>
-        <div class="hint">Accepts PNG / JPG / WEBP</div>
+    <div class="control" style="margin-top:10px;">
+      <label>Image URL</label>
+      <div class="input-row">
+        <input id="imageUrl" type="text" placeholder="https://example.com/photo.jpg" />
+        <button id="loadBtn">Load</button>
       </div>
-      <span class="badge">Choose file</span>
-      <input id="fileInput" type="file" accept="image/*" />
-    </label>
+      <div class="hint">Needs a CORS-friendly image (most CDNs/hosted images work).</div>
+    </div>
 
     <div class="viewer" id="viewer">
       <span class="placeholder">Your image will appear here</span>
@@ -279,8 +296,8 @@
   </div>
 
   <script>
-    const fileInput = document.getElementById("fileInput");
-    const dropzone = document.getElementById("dropzone");
+    const imageUrlInput = document.getElementById("imageUrl");
+    const loadBtn = document.getElementById("loadBtn");
     const photo = document.getElementById("photo");
     const viewer = document.getElementById("viewer");
     const overlay = document.getElementById("moireOverlay");
@@ -368,38 +385,23 @@
       }
     };
 
-    const loadFile = (file) => {
-      if (!file || !file.type.startsWith("image/")) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        photo.src = e.target.result;
-        viewer.classList.add("ready");
-      };
-      reader.readAsDataURL(file);
+    const loadImageFromUrl = (url) => {
+      if (!url) return;
+      photo.crossOrigin = "anonymous";
+      photo.onload = () => viewer.classList.add("ready");
+      photo.onerror = () => alert("Could not load that image. Check the URL/CORS.");
+      photo.src = url;
     };
 
-    fileInput.addEventListener("change", (e) => loadFile(e.target.files[0]));
-
-    ["dragenter", "dragover"].forEach((eventName) => {
-      dropzone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = "rgba(94, 234, 212, 0.8)";
-      });
+    loadBtn.addEventListener("click", () => {
+      loadImageFromUrl(imageUrlInput.value.trim());
     });
 
-    ["dragleave", "drop"].forEach((eventName) => {
-      dropzone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = "rgba(148, 163, 184, 0.4)";
-      });
+    imageUrlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        loadImageFromUrl(imageUrlInput.value.trim());
+      }
     });
-
-    dropzone.addEventListener("drop", (e) => {
-      const file = e.dataTransfer.files?.[0];
-      loadFile(file);
-    });
-
-    dropzone.addEventListener("click", () => fileInput.click());
 
     [stripeRange, angleRange, opacityRange, speedRange, offsetRange, animateToggle].forEach(
       (el) => el.addEventListener("input", setOverlay)
@@ -414,6 +416,9 @@
     });
 
     setOverlay();
+    const defaultImage = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&auto=format&fit=crop&q=80";
+    imageUrlInput.value = defaultImage;
+    loadImageFromUrl(defaultImage);
   </script>
 </body>
 </html>
