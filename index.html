@@ -412,9 +412,19 @@
         return;
       }
       if (!tiltListenerAttached) {
-        window.addEventListener("deviceorientation", handleTilt);
+        window.addEventListener("deviceorientation", handleTilt, true);
+        window.addEventListener("devicemotion", (e) => {
+          if (!tiltActive) return;
+          // fallback using acceleration including gravity; approximate gamma
+          const gx = e.accelerationIncludingGravity?.x ?? 0;
+          const shift = Math.max(-1, Math.min(1, gx / 9.8)) * 60 * parseFloat(tiltRange.value);
+          overlay.style.animationPlayState = "paused";
+          overlay.style.transform = `translateX(${shift}px)`;
+          offsetValue.textContent = `${shift.toFixed(1)}px`;
+        }, true);
         tiltListenerAttached = true;
       }
+      overlay.style.animationPlayState = "paused";
     };
 
     const loadImageFromUrl = (imgEl, url) => {
