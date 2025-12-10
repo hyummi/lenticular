@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lenticular / Moiré Playground</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --stripe-size: 8px;
+      --angle: 10deg;
+      --speed: 6s;
+      --offset: 0px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: radial-gradient(circle at 20% 20%, #1e293b 0, #0f172a 40%, #0b1220 70%);
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: #cbd5e1;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      border-radius: 16px;
+      padding: 18px;
+      backdrop-filter: blur(8px);
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .uploader {
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+      border-radius: 12px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.35);
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .uploader:hover {
+      border-color: rgba(94, 234, 212, 0.7);
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .badge {
+      background: rgba(94, 234, 212, 0.12);
+      color: #67e8f9;
+      border: 1px solid rgba(94, 234, 212, 0.4);
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .viewer {
+      position: relative;
+      margin-top: 14px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #0b1220;
+      min-height: 420px;
+      display: grid;
+      place-items: center;
+    }
+
+    #photo {
+      max-height: 640px;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 280ms ease;
+      display: block;
+      background: #0b1220;
+    }
+
+    .viewer.ready #photo {
+      opacity: 1;
+    }
+
+    #moireOverlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.55;
+      background: repeating-linear-gradient(
+        var(--angle, 10deg),
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0) calc(var(--stripe-size, 8px) * 0.5),
+        rgba(0, 0, 0, 0.9) calc(var(--stripe-size, 8px) * 0.5),
+        rgba(0, 0, 0, 0.9) var(--stripe-size, 8px)
+      );
+      mix-blend-mode: difference;
+      transform: translateX(var(--offset, 0px));
+      animation: drift var(--speed, 6s) linear infinite;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translateX(calc(-1 * var(--stripe-size, 8px)));
+      }
+      to {
+        transform: translateX(var(--stripe-size, 8px));
+      }
+    }
+
+    .controls {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+
+    .control {
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .control label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #67e8f9;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .flex {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toggle {
+      appearance: none;
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(148, 163, 184, 0.25);
+      position: relative;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease;
+    }
+
+    .toggle::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      top: 2px;
+      left: 2px;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .toggle:checked {
+      background: rgba(94, 234, 212, 0.3);
+      border-color: rgba(94, 234, 212, 0.8);
+    }
+
+    .toggle:checked::after {
+      transform: translateX(18px);
+      background: #67e8f9;
+    }
+
+    .placeholder {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Lenticular / Moiré Preview</h1>
+    <p>Drop in any image and play with stripe spacing, angle, and motion.</p>
+
+    <label class="uploader" for="fileInput" id="dropzone">
+      <div>
+        <div style="font-weight:600;">Upload or drag a photo</div>
+        <div class="hint">Accepts PNG / JPG / WEBP</div>
+      </div>
+      <span class="badge">Choose file</span>
+      <input id="fileInput" type="file" accept="image/*" />
+    </label>
+
+    <div class="viewer" id="viewer">
+      <span class="placeholder">Your image will appear here</span>
+      <img id="photo" alt="preview" />
+      <div id="moireOverlay" aria-hidden="true"></div>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label>Stripe size <span id="stripeValue">8px</span></label>
+        <input id="stripeRange" type="range" min="2" max="40" value="8" />
+      </div>
+      <div class="control">
+        <label>Angle <span id="angleValue">10°</span></label>
+        <input id="angleRange" type="range" min="0" max="90" value="10" />
+      </div>
+      <div class="control">
+        <label>Overlay opacity <span id="opacityValue">0.55</span></label>
+        <input id="opacityRange" type="range" min="0.1" max="1" step="0.05" value="0.55" />
+      </div>
+      <div class="control">
+        <label>Drift speed <span id="speedValue">6s</span></label>
+        <input id="speedRange" type="range" min="2" max="20" value="6" />
+      </div>
+      <div class="control">
+        <label>Manual offset <span id="offsetValue">0px</span></label>
+        <input id="offsetRange" type="range" min="-60" max="60" value="0" />
+      </div>
+      <div class="control">
+        <label class="flex">
+          <span>Animate stripes</span>
+          <input id="animateToggle" class="toggle" type="checkbox" checked />
+        </label>
+        <div class="hint">Turn off to scrub the overlay manually.</div>
+      </div>
+      <div class="control">
+        <label class="flex">
+          <span>Tilt to parallax</span>
+          <input id="tiltToggle" class="toggle" type="checkbox" />
+        </label>
+        <div class="hint">iOS requires motion permission the first time.</div>
+        <label> Tilt sensitivity <span id="tiltValue">0.6</span></label>
+        <input id="tiltRange" type="range" min="0.1" max="1.5" step="0.1" value="0.6" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const dropzone = document.getElementById("dropzone");
+    const photo = document.getElementById("photo");
+    const viewer = document.getElementById("viewer");
+    const overlay = document.getElementById("moireOverlay");
+
+    const stripeRange = document.getElementById("stripeRange");
+    const angleRange = document.getElementById("angleRange");
+    const opacityRange = document.getElementById("opacityRange");
+    const speedRange = document.getElementById("speedRange");
+    const offsetRange = document.getElementById("offsetRange");
+    const animateToggle = document.getElementById("animateToggle");
+    const tiltToggle = document.getElementById("tiltToggle");
+    const tiltRange = document.getElementById("tiltRange");
+
+    const stripeValue = document.getElementById("stripeValue");
+    const angleValue = document.getElementById("angleValue");
+    const opacityValue = document.getElementById("opacityValue");
+    const speedValue = document.getElementById("speedValue");
+    const offsetValue = document.getElementById("offsetValue");
+    const tiltValue = document.getElementById("tiltValue");
+
+    let tiltActive = false;
+    let tiltListenerAttached = false;
+
+    const setOverlay = () => {
+      overlay.style.setProperty("--stripe-size", `${stripeRange.value}px`);
+      overlay.style.setProperty("--angle", `${angleRange.value}deg`);
+      overlay.style.setProperty("--offset", `${offsetRange.value}px`);
+      overlay.style.setProperty("--speed", `${speedRange.value}s`);
+      overlay.style.opacity = opacityRange.value;
+
+      stripeValue.textContent = `${stripeRange.value}px`;
+      angleValue.textContent = `${angleRange.value}°`;
+      opacityValue.textContent = opacityRange.value;
+      speedValue.textContent = `${speedRange.value}s`;
+      offsetValue.textContent = `${offsetRange.value}px`;
+      tiltValue.textContent = tiltRange.value;
+
+      overlay.style.animationPlayState = animateToggle.checked ? "running" : "paused";
+      overlay.style.transform = animateToggle.checked
+        ? ""
+        : `translateX(${offsetRange.value}px)`;
+    };
+
+    const handleTilt = (event) => {
+      if (!tiltActive) return;
+      const gamma = event.gamma ?? 0; // left-right tilt
+      const clamped = Math.max(-30, Math.min(30, gamma));
+      const shift = (clamped / 30) * 60 * parseFloat(tiltRange.value); // max 60px shift scaled by sensitivity
+      overlay.style.animationPlayState = "paused";
+      overlay.style.transform = `translateX(${shift}px)`;
+      offsetValue.textContent = `${shift.toFixed(1)}px`;
+    };
+
+    const requestTiltPermission = async () => {
+      if (typeof DeviceMotionEvent === "undefined" && typeof DeviceOrientationEvent === "undefined") return true;
+      const perm = DeviceOrientationEvent?.requestPermission;
+      if (typeof perm === "function") {
+        try {
+          const res = await perm();
+          return res === "granted";
+        } catch (e) {
+          console.warn("Permission request failed", e);
+          return false;
+        }
+      }
+      return true; // non-iOS browsers
+    };
+
+    const enableTilt = async (enabled) => {
+      tiltActive = enabled;
+      if (!enabled) {
+        overlay.style.animationPlayState = animateToggle.checked ? "running" : "paused";
+        setOverlay();
+        return;
+      }
+      const ok = await requestTiltPermission();
+      if (!ok) {
+        tiltToggle.checked = false;
+        tiltActive = false;
+        return;
+      }
+      if (!tiltListenerAttached) {
+        window.addEventListener("deviceorientation", handleTilt);
+        tiltListenerAttached = true;
+      }
+    };
+
+    const loadFile = (file) => {
+      if (!file || !file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        photo.src = e.target.result;
+        viewer.classList.add("ready");
+      };
+      reader.readAsDataURL(file);
+    };
+
+    fileInput.addEventListener("change", (e) => loadFile(e.target.files[0]));
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = "rgba(94, 234, 212, 0.8)";
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = "rgba(148, 163, 184, 0.4)";
+      });
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files?.[0];
+      loadFile(file);
+    });
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    [stripeRange, angleRange, opacityRange, speedRange, offsetRange, animateToggle].forEach(
+      (el) => el.addEventListener("input", setOverlay)
+    );
+
+    tiltRange.addEventListener("input", () => {
+      tiltValue.textContent = tiltRange.value;
+    });
+
+    tiltToggle.addEventListener("change", (e) => {
+      enableTilt(e.target.checked);
+    });
+
+    setOverlay();
+  </script>
+</body>
+</html>
+
