@@ -7,9 +7,9 @@
   <style>
     :root {
       color-scheme: dark;
-      --stripe-size: 8px;
-      --angle: 10deg;
-      --speed: 6s;
+      --stripe-size: 4px;
+      --angle: 0deg;
+      --speed: 8s;
       --offset: 0px;
     }
 
@@ -48,16 +48,6 @@
       margin: 0 auto;
     }
 
-    .badge {
-      background: rgba(94, 234, 212, 0.12);
-      color: #67e8f9;
-      border: 1px solid rgba(94, 234, 212, 0.4);
-      padding: 6px 10px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
     .viewer {
       position: relative;
       margin-top: 14px;
@@ -70,7 +60,10 @@
       place-items: center;
     }
 
-    #photo {
+    #photoA,
+    #photoB {
+      position: absolute;
+      inset: 0;
       max-height: 640px;
       width: 100%;
       height: 100%;
@@ -81,8 +74,44 @@
       background: #0b1220;
     }
 
-    .viewer.ready #photo {
+    .viewer.ready #photoA,
+    .viewer.ready #photoB {
       opacity: 1;
+    }
+
+    /* Interlacing masks */
+    #photoA {
+      mask-image: repeating-linear-gradient(
+        90deg,
+        #000 0,
+        #000 calc(var(--interlace-size, 8px) * 0.5),
+        transparent calc(var(--interlace-size, 8px) * 0.5),
+        transparent var(--interlace-size, 8px)
+      );
+      -webkit-mask-image: repeating-linear-gradient(
+        90deg,
+        #000 0,
+        #000 calc(var(--interlace-size, 8px) * 0.5),
+        transparent calc(var(--interlace-size, 8px) * 0.5),
+        transparent var(--interlace-size, 8px)
+      );
+    }
+
+    #photoB {
+      mask-image: repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent calc(var(--interlace-size, 8px) * 0.5),
+        #000 calc(var(--interlace-size, 8px) * 0.5),
+        #000 var(--interlace-size, 8px)
+      );
+      -webkit-mask-image: repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent calc(var(--interlace-size, 8px) * 0.5),
+        #000 calc(var(--interlace-size, 8px) * 0.5),
+        #000 var(--interlace-size, 8px)
+      );
     }
 
     #moireOverlay {
@@ -195,13 +224,6 @@
       font-weight: 500;
     }
 
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-
     input[type="text"] {
       width: 100%;
       padding: 10px 12px;
@@ -238,39 +260,40 @@
 <body>
   <div class="card">
     <h1>Lenticular / Moiré Preview</h1>
-    <p>Paste a single image URL to view and apply the lenticular overlay.</p>
+    <p>Add two images; stripes reveal alternating rows/columns to create the lenticular effect. Adjust stripe size and overlay as needed.</p>
 
-    <div class="control" style="margin-top:10px;">
-      <label>Image URL</label>
-      <div class="input-row">
-        <input id="imageUrl" type="text" placeholder="https://example.com/photo.jpg" />
-        <button id="loadBtn">Load</button>
-      </div>
-      <div class="hint">Needs a CORS-friendly image (most CDNs/hosted images work).</div>
+    <div class="control" style="margin-top:10px; display:grid; gap:10px;">
+      <label>Image A URL</label>
+      <input id="imageUrlA" type="text" placeholder="https://example.com/photo-a.jpg" />
+      <label>Image B URL</label>
+      <input id="imageUrlB" type="text" placeholder="https://example.com/photo-b.jpg" />
+      <div class="hint">Use CORS-friendly images (most CDNs/hosted images work).</div>
+      <button id="loadBtn">Load both images</button>
     </div>
 
     <div class="viewer" id="viewer">
       <span class="placeholder">Your image will appear here</span>
-      <img id="photo" alt="preview" />
+      <img id="photoA" alt="Image A" />
+      <img id="photoB" alt="Image B" />
       <div id="moireOverlay" aria-hidden="true"></div>
     </div>
 
     <div class="controls">
       <div class="control">
-        <label>Stripe size <span id="stripeValue">8px</span></label>
-        <input id="stripeRange" type="range" min="2" max="40" value="8" />
+        <label>Stripe size <span id="stripeValue">4px</span></label>
+        <input id="stripeRange" type="range" min="2" max="40" value="4" />
       </div>
       <div class="control">
-        <label>Angle <span id="angleValue">10°</span></label>
-        <input id="angleRange" type="range" min="0" max="90" value="10" />
+        <label>Angle <span id="angleValue">0°</span></label>
+        <input id="angleRange" type="range" min="0" max="90" value="0" />
       </div>
       <div class="control">
-        <label>Overlay opacity <span id="opacityValue">0.55</span></label>
-        <input id="opacityRange" type="range" min="0.1" max="1" step="0.05" value="0.55" />
+        <label>Overlay opacity <span id="opacityValue">0.65</span></label>
+        <input id="opacityRange" type="range" min="0.1" max="1" step="0.05" value="0.65" />
       </div>
       <div class="control">
-        <label>Drift speed <span id="speedValue">6s</span></label>
-        <input id="speedRange" type="range" min="2" max="20" value="6" />
+        <label>Drift speed <span id="speedValue">8s</span></label>
+        <input id="speedRange" type="range" min="2" max="20" value="8" />
       </div>
       <div class="control">
         <label>Manual offset <span id="offsetValue">0px</span></label>
@@ -292,13 +315,20 @@
         <label> Tilt sensitivity <span id="tiltValue">0.6</span></label>
         <input id="tiltRange" type="range" min="0.1" max="1.5" step="0.1" value="0.6" />
       </div>
+      <div class="control">
+        <label>Quick preset</label>
+        <button id="presetBtn">Apply moiré preset</button>
+        <div class="hint">Uses tight vertical stripes and moderate opacity.</div>
+      </div>
     </div>
   </div>
 
   <script>
-    const imageUrlInput = document.getElementById("imageUrl");
+    const imageUrlA = document.getElementById("imageUrlA");
+    const imageUrlB = document.getElementById("imageUrlB");
     const loadBtn = document.getElementById("loadBtn");
-    const photo = document.getElementById("photo");
+    const photoA = document.getElementById("photoA");
+    const photoB = document.getElementById("photoB");
     const viewer = document.getElementById("viewer");
     const overlay = document.getElementById("moireOverlay");
 
@@ -310,6 +340,7 @@
     const animateToggle = document.getElementById("animateToggle");
     const tiltToggle = document.getElementById("tiltToggle");
     const tiltRange = document.getElementById("tiltRange");
+    const presetBtn = document.getElementById("presetBtn");
 
     const stripeValue = document.getElementById("stripeValue");
     const angleValue = document.getElementById("angleValue");
@@ -323,6 +354,7 @@
 
     const setOverlay = () => {
       overlay.style.setProperty("--stripe-size", `${stripeRange.value}px`);
+      overlay.style.setProperty("--interlace-size", `${stripeRange.value}px`);
       overlay.style.setProperty("--angle", `${angleRange.value}deg`);
       overlay.style.setProperty("--offset", `${offsetRange.value}px`);
       overlay.style.setProperty("--speed", `${speedRange.value}s`);
@@ -385,22 +417,38 @@
       }
     };
 
-    const loadImageFromUrl = (url) => {
+    const loadImageFromUrl = (imgEl, url) => {
       if (!url) return;
-      photo.crossOrigin = "anonymous";
-      photo.onload = () => viewer.classList.add("ready");
-      photo.onerror = () => alert("Could not load that image. Check the URL/CORS.");
-      photo.src = url;
+      imgEl.crossOrigin = "anonymous";
+      imgEl.onload = () => {
+        if (photoA.complete && photoB.complete) viewer.classList.add("ready");
+      };
+      imgEl.onerror = () => alert("Could not load that image. Check the URL/CORS.");
+      imgEl.src = url;
     };
 
-    loadBtn.addEventListener("click", () => {
-      loadImageFromUrl(imageUrlInput.value.trim());
-    });
+    const loadBoth = () => {
+      viewer.classList.remove("ready");
+      loadImageFromUrl(photoA, imageUrlA.value.trim());
+      loadImageFromUrl(photoB, imageUrlB.value.trim());
+    };
 
-    imageUrlInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        loadImageFromUrl(imageUrlInput.value.trim());
-      }
+    loadBtn.addEventListener("click", loadBoth);
+
+    [imageUrlA, imageUrlB].forEach((input) =>
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") loadBoth();
+      })
+    );
+
+    presetBtn.addEventListener("click", () => {
+      stripeRange.value = 4;
+      angleRange.value = 0;
+      opacityRange.value = 0.65;
+      speedRange.value = 8;
+      offsetRange.value = 0;
+      animateToggle.checked = true;
+      setOverlay();
     });
 
     [stripeRange, angleRange, opacityRange, speedRange, offsetRange, animateToggle].forEach(
@@ -416,9 +464,12 @@
     });
 
     setOverlay();
-    const defaultImage = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&auto=format&fit=crop&q=80";
-    imageUrlInput.value = defaultImage;
-    loadImageFromUrl(defaultImage);
+    const defaultImageA = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&auto=format&fit=crop&q=80";
+    const defaultImageB = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1200&auto=format&fit=crop&q=80";
+    imageUrlA.value = defaultImageA;
+    imageUrlB.value = defaultImageB;
+    loadImageFromUrl(photoA, defaultImageA);
+    loadImageFromUrl(photoB, defaultImageB);
   </script>
 </body>
 </html>
