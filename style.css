@@ -158,6 +158,26 @@ body {
   margin-bottom: 8px;
 }
 
+.card[data-side="front"] .layer-front {
+  opacity: 1;
+  filter: brightness(1);
+}
+
+.card[data-side="front"] .layer-back {
+  opacity: 0.08;
+  filter: blur(2px) saturate(0.8);
+}
+
+.card[data-side="back"] .layer-front {
+  opacity: 0.05;
+  filter: blur(2px) saturate(0.8);
+}
+
+.card[data-side="back"] .layer-back {
+  opacity: 1;
+  filter: brightness(1);
+}
+
 .actions {
   display: flex;
   gap: 10px;

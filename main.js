@@ -6,11 +6,13 @@ const toastEl = document.getElementById("toast");
 let usingPointerFallback = false;
 let listenerAttached = false;
 let swapped = false;
+let currentSide = "front";
 
 const config = {
   maxTilt: 20, // degrees mapped to px offset
   depthFront: 14,
   depthBack: 8,
+  toggleThreshold: 6, // degrees left/right required to flip image
 };
 
 function clamp(value, min, max) {
@@ -25,10 +27,22 @@ function showToast(message) {
   setTimeout(() => toastEl.classList.remove("show"), 2200);
 }
 
+function setSide(side) {
+  if (!card || side === currentSide) return;
+  currentSide = side;
+  card.dataset.side = side;
+}
+
 function applyTilt(x, y) {
   if (!card) return;
-  const normX = clamp(x, -config.maxTilt, config.maxTilt) / config.maxTilt;
-  const normY = clamp(y, -config.maxTilt, config.maxTilt) / config.maxTilt;
+  const clampedX = clamp(x, -config.maxTilt, config.maxTilt);
+  const clampedY = clamp(y, -config.maxTilt, config.maxTilt);
+  const normX = clampedX / config.maxTilt;
+  const normY = clampedY / config.maxTilt;
+
+  if (Math.abs(clampedX) > config.toggleThreshold) {
+    setSide(clampedX > 0 ? "front" : "back");
+  }
 
   card.style.setProperty("--tilt-x", `${normX}`);
   card.style.setProperty("--tilt-y", `${normY}`);
@@ -115,6 +129,9 @@ function swapLayers() {
 function init() {
   enableMotionBtn?.addEventListener("click", requestIOSPermission);
   swapBtn?.addEventListener("click", swapLayers);
+  if (card) {
+    card.dataset.side = currentSide;
+  }
 
   // If not on iOS Safari, start pointer immediately for desktop preview.
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
